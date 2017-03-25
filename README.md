@@ -28,7 +28,7 @@ await bob.setProfile({name:, description:, image:})
 await bob.follow(alicesUrl)
 await bob.unfollow(alicesUrl)
 
-await bob.listFollowing() // => [{url:, name:, description:, image:}, ...]
+await bob.listFollowing() // => [{url:, name:, description:, image:, downloaded:}, ...]
 await bob.listKnownFollowers() // => [{url:, name:, description:, image:}, ...]
 await bob.listFriends() => [{url:, name:, description:, image:}, ...]
 
@@ -55,19 +55,31 @@ await bob.broadcast({
 
 // bob's broadcasts
 await bob.listBroadcasts({
-  after:, before:, on:, // time slices
-  limit:,               // max num of posts
-  metaOnly:,            // dont read files, just list entries
-  type:                 // filter by broadcast type
+  // time slice: between jan 1 2017 and feb 1 2017
+  after: ['2016'],
+  before: ['2017', '02']
 })
+await bob.listBroadcasts({
+  // put another way: during january 2017
+  on: ['2017', '01']
+})
+await bob.listBroadcasts({
+  limit: 100, // max num of posts
+  metaOnly: false, // dont read files, just list entries
+  type: 'comment' // filter by broadcast type
+})
+
 // bob + followed's broadcasts
 await bob.listFeed({
-  after:, before:, on:, // time slices
-  limit:,               // max num of posts
-  metaOnly:,            // dont read files, just list entries
-  type:                 // filter by broadcast type  
+  // same opts as .listBroadcasts()
 })
-await bob.getBroadcast(path)
+
+// events
+// =
+
+var events = bob.createActivityStream()
+events.addEventListener('new-broadcast', ({author, path, ctime, rtime}) => ...)
+events.addEventListener('profile-downloaded', ({profile}) => ...)
 ```
 
 ## API
@@ -113,10 +125,11 @@ List of users followed by this profile.
 ```js
 await profile.listFollowing() /* => [
   {
-    url: String,
-    name: String?,
-    description: String?,
-    image: String?
+    url: String, the profile url
+    name: String?, the user name (not globally unique)
+    description: String?, a short bio
+    image: String?, path of the profile image
+    downloaded: Boolean, has the profile been downloaded?
   },
   ...
 ] */
@@ -256,6 +269,35 @@ await profile.getBroadcast(String) /* => {
   video: [String] | String | undefined, a URL or URLs
   audio: [String] | String | undefined, a URL or URLs
 }*/
+
+### var events = profile.createActivityStream()
+
+### events.addEventListener('new-broadcast')
+
+Emitted when a new broadcast has been received from the profile or one of the followed profiles. Will not be emitted for broadcasts which were not created in the past 24 hours.
+
+```js
+events.addEventListener('new-broadcast', event => {
+  /*
+  event.author: String, the url of the author
+  event.path: String, the path of the new broadcast
+  event.ctime: Number, the timestamp of the creation of the broadcast
+  event.rtime: Number, the timestamp of the when the broadcast was received
+  */
+})
+```
+
+### events.addEventListener('profile-downloaded')
+
+Emitted when an undownloaded profile is first discovered on the network and downloaded.
+
+```js
+events.addEventListener('profile-downloaded', event => {
+  /*
+  event.profile: String, the url of the profile
+  */
+})
+```
 
 ## Spec
 
