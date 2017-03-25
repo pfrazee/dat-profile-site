@@ -55,15 +55,10 @@ await bob.broadcast({
 
 // bob's broadcasts
 await bob.listBroadcasts({
-  // time slice: between jan 1 2017 and feb 1 2017
-  after: ['2016'],
-  before: ['2017', '02']
-})
-await bob.listBroadcasts({
-  // put another way: during january 2017
-  on: ['2017', '01']
-})
-await bob.listBroadcasts({
+  // time slice: between 1-2 hours ago
+  after: (Date.now() - 1000 * 60 * 60 * 2),
+  before: (Date.now() - 1000 * 60 * 60 * 1)
+
   limit: 100, // max num of posts
   metaOnly: false, // dont read files, just list entries
   type: 'comment' // filter by broadcast type
@@ -204,27 +199,27 @@ List broadcasts authored by the profile.
 
 ```js
 await profile.listBroadcasts({
-  after:    Array | Date | Number | undefined, a time-description or date or epoch number
-  before:   Array | Date | Number | undefined, a time-description or date or epoch number
-  on:       Array | Date | Number | undefined, a time-description or date or epoch number
-  limit:    Number?, the max number of posts to return
+  after:    Date | Number | undefined, a date or epoch number
+  before:   Date | Number | undefined, a date or epoch number
+  limit:    Number?, the max number of posts to return. Default 20.
+  reverse:  Boolean?, if true will provide oldest first
   metaOnly: Boolean?, provide file-entry descriptors instead of reading content
-  type:     String?, a filter on the type of broadcast
-})
-```
-
-A "time-description" is an array of the following format:
-
-```
-[YYYY, MM, DD, hh, mm, ss]
-```
-
-A time-description can specific down to a second, or as broad as a year:
-
-```js
-[2017] // the year 2017
-[2017, 01, 05] // Jan 5, 2017
-[2017, 01, 05, 13, 10, 50] // 1:10:50 PM on Jan 5, 2017
+  type:     String?, a filter on the type of broadcast. Does not work with 'metaOnly==true'.
+}) => /* [
+  {
+    author: DatProfileSite, the broadcast author
+    name: String, the file path
+    ctime: Number, creation time
+    mtime: Number, modification time
+    content: {
+      "@type": String, the broadcast type (eg 'Comment')
+      text: String, the text of the broadcast
+      image: [String] | String | undefined, a URL or URLs
+      video: [String] | String | undefined, a URL or URLs
+      audio: [String] | String | undefined, a URL or URLs
+    }
+  }
+] */
 ```
 
 ### profile.listFeed(opts)
@@ -233,27 +228,27 @@ List broadcasts authored by the profile and its followed profiles.
 
 ```js
 await profile.listFeed({
-  after:    Array | Date | Number | undefined, a time-description or date or epoch number
-  before:   Array | Date | Number | undefined, a time-description or date or epoch number
-  on:       Array | Date | Number | undefined, a time-description or date or epoch number
-  limit:    Number?, the max number of posts to return
+  after:    Date | Number | undefined, a date or epoch number
+  before:   Date | Number | undefined, a date or epoch number
+  limit:    Number?, the max number of posts to return. Default 20.
+  reverse:  Boolean?, if true will provide oldest first
   metaOnly: Boolean?, provide file-entry descriptors instead of reading content
-  type:     String?, a filter on the type of broadcast
-})
-```
-
-A "time-description" is an array of the following format:
-
-```
-[YYYY, MM, DD, hh, mm, ss]
-```
-
-A time-description can specific down to a second, or as broad as a year:
-
-```js
-[2017] // the year 2017
-[2017, 01, 05] // Jan 5, 2017
-[2017, 01, 05, 13, 10, 50] // 1:10:50 PM on Jan 5, 2017
+  type:     String?, a filter on the type of broadcast. Does not work with 'metaOnly==true'.
+}) => /* [
+  {
+    author: DatProfileSite, the broadcast author
+    name: String, the file path
+    ctime: Number, creation time
+    mtime: Number, modification time
+    content: {
+      "@type": String, the broadcast type (eg 'Comment')
+      text: String, the text of the broadcast
+      image: [String] | String | undefined, a URL or URLs
+      video: [String] | String | undefined, a URL or URLs
+      audio: [String] | String | undefined, a URL or URLs
+    }
+  }
+] */
 ```
 
 ### profile.getBroadcast(path)
@@ -342,9 +337,9 @@ person|https://schema.org/Person |name, image, description, follows
   "image": "/profile.jpg",
   "description": "Finally trying out this 'Dat' thing!",
   "follows": [
-    {"url": "dat://.../", name: "Bob"},
-    {"url": "dat://.../", name: "Carla"},
-    {"url": "dat://.../", name: "Dan"}
+    {"url": "dat://.../"},
+    {"url": "dat://.../"},
+    {"url": "dat://.../"}
   ]
 }
 ```
@@ -360,13 +355,15 @@ A site may have many broadcasts.
 Files that match this pattern will be placed in the broadcast feed. Any other files will be ignored; related files (such as images or videos) can be placed in the broadcasts folder.
 
 ```
-/broadcasts/{YYYY}/{MM}/{DD}/{type}-{HH}{MM}{SS}.json
+/broadcasts/{timestamp}.json
 ```
 
-Example path for "A comment posted at 4:30pm on March 3, 2017."
+The `timestamp` is a Unix epoch number.
+
+Example path for "A comment posted at Sat Mar 25 2017 16:51:18."
 
 ```
-/broadcasts/2017/03/21/comment-163000.json
+/broadcasts/1490478678636.json
 ```
 
 #### Format
@@ -384,7 +381,7 @@ comment|https://schema.org/Comment |text, image, video, audio
 #### Example: Simple comment
 
 ```js
-// /broadcasts/2017/03/21/comment-163000.json
+// /broadcasts/1490478678636.json
 {
   "@context": "http://schema.org",
   "@type": "Comment",
@@ -395,7 +392,7 @@ comment|https://schema.org/Comment |text, image, video, audio
 #### Example: Share image
 
 ```js
-// /broadcasts/2017/03/21/comment-163001.json
+// /broadcasts/1490478678637.json
 {
   "@context": "http://schema.org",
   "@type": "Comment",

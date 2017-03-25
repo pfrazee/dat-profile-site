@@ -1,0 +1,28 @@
+{
+  "name": "dat-profile-site",
+  "version": "1.0.0",
+  "description": "API for interacting with Dat Profile Sites.",
+  "main": "index.js",
+  "dependencies": {
+    "extensible-error": "^1.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "standard --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/beakerbrowser/dat-profile-site.git"
+  },
+  "keywords": [
+    "dat",
+    "profile",
+    "site"
+  ],
+  "author": "Paul Frazee <pfrazee@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/beakerbrowser/dat-profile-site/issues"
+  },
+  "homepage": "https://github.com/beakerbrowser/dat-profile-site#readme"
+}
