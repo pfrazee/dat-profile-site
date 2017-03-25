@@ -142,7 +142,7 @@ module.exports = class DatProfileSite {
     if (audio) values.audio = audio
 
     // write file
-    var path = getBroadcastPath('comment')
+    var path = getBroadcastPath()
     await ensureParentDirectoryExists(this.archive, path)
     await this.archive.writeFile(path, JSON.stringify(values, null, 2))
   }
@@ -225,15 +225,14 @@ async function ensureParentDirectoryExists (archive, path) {
 }
 
 // helper to construct post destinations
-function getBroadcastPath (type) {
-  var d = new Date()
-  var YYYY = d.getFullYear()
-  var MM = pad0(d.getMonth() + 1)
-  var DD = pad0(d.getDate())
-  var hh = pad0(d.getHours())
-  var mm = pad0(d.getMinutes())
-  var ss = pad0(d.getSeconds())
-  return `/broadcasts/${YYYY}/${MM}/${DD}/${type}-${hh}${mm}${ss}.json`
+var lastUsedTS = 0
+function getBroadcastPath () {
+  var ts = Date.now()
+  if (lastUsedTS === ts) {
+    ts++ // cheat to avoid collisions
+  }
+  lastUsedTS = ts
+  return `/broadcasts/${ts}.json`
 }
 
 // helper to make sure 1 -> 01, but 11 -> 11
