@@ -100,7 +100,7 @@ await profile.getProfile() /* => {
 
 ### profile.setProfile(data)
 
-Update the profile information. If undefined, no change is made.
+Update the profile information. If an attribute is left undefined, no change to the attr is made.
 
 ```js
 profile.setProfile({
@@ -269,6 +269,7 @@ await profile.getBroadcast(String) /* => {
   video: [String] | String | undefined, a URL or URLs
   audio: [String] | String | undefined, a URL or URLs
 }*/
+```
 
 ### var events = profile.createActivityStream()
 
@@ -299,7 +300,7 @@ events.addEventListener('profile-downloaded', event => {
 })
 ```
 
-## Spec
+## Files Spec
 
 This page specifies the required file paths, formats, and schemas to conform to the Profile Site Protocol. Conformance allows feed applications to consume the target site and render their content correctly.
 
