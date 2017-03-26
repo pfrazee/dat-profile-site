@@ -32,7 +32,7 @@ module.exports = class CachedFile {
 
     // convert
     if (this.opts.json) {
-      data = JSON.stringify(data)
+      data = JSON.stringify(data, null, 2)
     }
 
     // write to disk
