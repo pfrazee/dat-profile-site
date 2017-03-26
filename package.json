@@ -1,10 +1,9 @@
 {
   "name": "dat-profile-site",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "API for interacting with Dat Profile Sites.",
   "main": "index.js",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {},
   "scripts": {
     "test": "standard --fix"
