@@ -4,7 +4,6 @@
   "description": "API for interacting with Dat Profile Sites.",
   "main": "index.js",
   "dependencies": {
-    "extensible-error": "^1.0.0"
   },
   "devDependencies": {},
   "scripts": {
