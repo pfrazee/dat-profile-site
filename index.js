@@ -1,6 +1,6 @@
 /* globals DatArchive */
 
-const {MissingParameterError} = require('errors')
+const {MissingParameterError} = require('./errors')
 const CachedFile = require('./cached-file')
 const CachedSites = require('./cached-sites')
 
@@ -9,8 +9,13 @@ module.exports = class DatProfileSite {
     if (!url) {
       throw new MissingParameterError()
     }
-    this.url = url
-    this.archive = new DatArchive(url)
+    if (url instanceof DatArchive) {
+      this.url = url
+      this.archive = new DatArchive(url)
+    } else {
+      this.url = url.url
+      this.archive = url
+    }
 
     // managed data
     this.cache = {
