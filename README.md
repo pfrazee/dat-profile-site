@@ -113,12 +113,14 @@ Add a user to this profile's follows.
 
 Remove a user from this profile's follows.
 
-### profile.listFollowing()
+### profile.listFollowing(opts)
 
 List of users followed by this profile.
 
 ```js
-await profile.listFollowing() /* => [
+await profile.listFollowing({
+  timeout: Number, amount of ms to wait until giving up on a profile-download (default 5000)
+}) /* => [
   {
     url: String, the profile url
     name: String?, the user name (not globally unique)
@@ -205,6 +207,7 @@ await profile.listBroadcasts({
   reverse:  Boolean?, if true will provide oldest first
   metaOnly: Boolean?, provide file-entry descriptors instead of reading content
   type:     String?, a filter on the type of broadcast. Does not work with 'metaOnly==true'.
+  timeout:  Number?, the timeout for each operation. Default 5000. (Note: There are multiple operations.)
 }) => /* [
   {
     author: DatProfileSite, the broadcast author
@@ -234,6 +237,7 @@ await profile.listFeed({
   reverse:  Boolean?, if true will provide oldest first
   metaOnly: Boolean?, provide file-entry descriptors instead of reading content
   type:     String?, a filter on the type of broadcast. Does not work with 'metaOnly==true'.
+  timeout:  Number?, the timeout for each operation. Default 5000. (Note: There are multiple operations.)
 }) => /* [
   {
     author: DatProfileSite, the broadcast author
@@ -257,12 +261,17 @@ Read the given broadcast object. Will throw with `InvalidBroadcastFileError` if 
 
 ```js
 await profile.getBroadcast(String) /* => {
-  '@context': 'http://schema.org',
-  '@type': 'Comment',
-  text: String?, the text of the broadcast
-  image: [String] | String | undefined, a URL or URLs
-  video: [String] | String | undefined, a URL or URLs
-  audio: [String] | String | undefined, a URL or URLs
+  name: String, the file path
+  ctime: Number, creation time
+  mtime: Number, modification time
+  content {
+    '@context': 'http://schema.org',
+    '@type': 'Comment',
+    text: String?, the text of the broadcast
+    image: [String] | String | undefined, a URL or URLs
+    video: [String] | String | undefined, a URL or URLs
+    audio: [String] | String | undefined, a URL or URLs
+  }
 }*/
 ```
 

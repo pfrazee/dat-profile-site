@@ -8,20 +8,22 @@ module.exports = class CachedFile {
     this.contents = null
   }
 
-  async get () {
+  async get (opts) {
+    opts = opts || {}
+
     // read from cache
-    if (this.contents) {
+    if (this.contents && !opts.noCache) {
       return this.contents
     }
 
     // read from disk
-    this.contents = await this.archive.readFile(this.path, this.opts)
+    this.contents = await this.archive.readFile(this.path, opts)
 
     // convert
     if (this.opts.json) {
       this.contents = JSON.parse(this.contents)
     }
-    return this.contents || this.opts.fallback
+    return this.contents || {}
   }
 
   async put (data) {

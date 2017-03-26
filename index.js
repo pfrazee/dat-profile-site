@@ -10,11 +10,11 @@ module.exports = class DatProfileSite {
       throw new MissingParameterError()
     }
     if (url instanceof DatArchive) {
-      this.url = url
-      this.archive = new DatArchive(url)
-    } else {
       this.url = url.url
       this.archive = url
+    } else {
+      this.url = url
+      this.archive = new DatArchive(url)
     }
 
     // managed data
@@ -53,6 +53,7 @@ module.exports = class DatProfileSite {
 
     // read, update, write profile
     var profile = await this.getProfile()
+    profile.follows = profile.follows || []
     if (!profile.follows.find(byURL(url))) {
       profile.follows.push({url})
     }
@@ -62,6 +63,7 @@ module.exports = class DatProfileSite {
   async unfollow (url) {
     // read, update, write profile
     var profile = await this.getProfile()
+    profile.follows = profile.follows || []
     var index = profile.follows.findIndex(byURL(url))
     if (index !== -1) {
       profile.follows.splice(index, 1)
@@ -69,7 +71,7 @@ module.exports = class DatProfileSite {
     return await this.cache.profile.put(profile)
   }
 
-  async listFollowing () {
+  async listFollowing (opts) {
     // get profile
     var profile = await this.getProfile()
     var follows = profile.follows || []
@@ -78,26 +80,25 @@ module.exports = class DatProfileSite {
     var followedSites = await this.cache.otherSites.get(follows)
 
     // fetch profiles
-    return await getRemoteProfiles(followedSites)
+    return await getRemoteProfiles(followedSites, opts)
   }
 
-  async listKnownFollowers () {
-    return this.listFriends()
+  async listKnownFollowers (opts) {
+    return this.listFriends(opts)
   }
 
-  async listFriends () {
-    // get profile
-    var profile = await this.getProfile()
-    var follows = profile.follows || []
-
-    // get followed sites
-    var followedSites = await this.cache.otherSites.get(follows)
+  async listFriends (opts) {
+    // list following
+    var followingProfiles = await this.listFollowing(opts)
 
     // filter mutual follows
-    followedSites = followedSites.filter(site => site.isFollowing(this.url))
-
-    // fetch profiles
-    return await getRemoteProfiles(followedSites)
+    return followingProfiles.filter(profile => {
+      var follows = profile.follows
+      if (!follows || !Array.isArray(follows)) {
+        return false
+      }
+      return follows.find(byURL(this.url))
+    })
   }
 
   async isFollowing (url) {
@@ -109,7 +110,7 @@ module.exports = class DatProfileSite {
     return !!follows.find(byURL(url))
   }
 
-  async isFriendsWith (url) {
+  async isFriendsWith (url, opts) {
     // get profile
     var profile = await this.getProfile()
     var follows = profile.follows || []
@@ -122,7 +123,7 @@ module.exports = class DatProfileSite {
 
     // load remote profile
     var followedSites = await this.cache.otherSites.get([follow])
-    var followedProfiles = await getRemoteProfiles(followedSites)
+    var followedProfiles = await getRemoteProfiles(followedSites, opts)
     var followedProfile = followedProfiles[0]
     var inverseFollows = followedProfile.follows || []
 
@@ -150,6 +151,7 @@ module.exports = class DatProfileSite {
     var path = getBroadcastPath()
     await ensureParentDirectoryExists(this.archive, path)
     await this.archive.writeFile(path, JSON.stringify(values, null, 2))
+    return this.url + path
   }
 
   // reading the feed
@@ -172,7 +174,7 @@ module.exports = class DatProfileSite {
     // load entry if needed
     var entry = path
     if (typeof entry === 'string') {
-      entry = this.archive.stat(path)
+      entry = await this.archive.stat(path)
     }
 
     // read and parse
@@ -196,11 +198,11 @@ function byURL (v) {
 }
 
 // helper to load the profiles of multiple remote sites, simultaneously
-async function getRemoteProfiles (profileSites) {
+async function getRemoteProfiles (profileSites, {timeout} = {}) {
   return await Promise.all(profileSites.map(async (profileSite) => {
     try {
       // fetch profile and note that download was successful
-      var profile = await profileSite.cache.profile.get()
+      var profile = await profileSite.cache.profile.get({timeout, noCache: true})
       profile.url = profileSite.url
       profile.downloaded = true
       return profile
@@ -250,41 +252,42 @@ function pad0 (v) {
 }
 
 // helper to construct a feed from an arbitrary set of sites
-async function buildFeed (sites, {after, before, limit, metaOnly, type, reverse} = {}) {
+async function buildFeed (sites, {after, before, limit, metaOnly, type, reverse, timeout} = {}) {
   var feed = []
   if (before) before = +before
   if (after) after = +after
   limit = limit || 20
 
-  sites.forEach(async site => {
+  await Promise.all(sites.map(async site => {
     try {
       // list files
-      var entries = await site.archive.listFiles('/broadcasts')
+      var entries = await site.archive.listFiles('/broadcasts', {timeout})
     } catch (e) {
-      return []
+      return
     }
 
     // parse and filter
     Object.keys(entries).filter(name => {
       // parse create time
-      var createTime = parseBroadcastFilename(name)
+      var publishTime = parseBroadcastFilename(name)
 
-      // filter
-      if (!createTime) return
-      if (after && createTime <= after) return
-      if (before && createTime >= before) return
+      // // filter
+      if (!publishTime) return
+      if (after && publishTime <= after) return
+      if (before && publishTime >= before) return
 
       // add to feed
+      entries[name].publishTime = publishTime
       entries[name].author = site
       feed.push(entries[name])
     })
-  })
+  }))
 
   // sort
   if (reverse) {
-    feed.sort((a, b) => a.ctime - b.ctime)
+    feed.sort((a, b) => b.publishTime - a.publishTime)
   } else {
-    feed.sort((a, b) => b.ctime - a.ctime)
+    feed.sort((a, b) => a.publishTime - b.publishTime)
   }
 
   // limit
@@ -301,7 +304,7 @@ async function buildFeed (sites, {after, before, limit, metaOnly, type, reverse}
   await Promise.all(feed.map(async (entry) => {
     try {
       // read and parse
-      entry.content = JSON.parse(await entry.author.archive.readFile(entry.name, 'utf8'))
+      entry.content = JSON.parse(await entry.author.archive.readFile(entry.name, {encoding: 'utf8', timeout}))
     } catch (e) {
       console.warn('Failed to read file', e)
       entry.error = e
@@ -311,14 +314,14 @@ async function buildFeed (sites, {after, before, limit, metaOnly, type, reverse}
   if (type) {
     // apply type filter
     return feed.filter(entry => {
-      return !!entry.content && entry.content.type.toLowerString() === type.toLowerString()
+      return !!entry.content && (entry.content['@type'] || '').toLowerString() === type.toLowerString()
     })
   }
   return feed
 }
 
 // helper to pull the timestamp from the broadcast filenames
-var bfregex = /\/([\d]+)\.json$/i
+var bfregex = /([\d]+)\.json$/i
 function parseBroadcastFilename (path) {
   var match = bfregex.exec(path)
   if (match) return +match[1]
