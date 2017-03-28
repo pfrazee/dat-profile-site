@@ -264,6 +264,9 @@ async function buildFeed (sites, {after, before, limit, metaOnly, type, reverse,
       return
     }
 
+    // grab the site's profile (should be cached in memory)
+    var siteProfile = await site.getProfile()
+
     // parse and filter
     Object.keys(entries).filter(name => {
       // parse create time
@@ -277,6 +280,8 @@ async function buildFeed (sites, {after, before, limit, metaOnly, type, reverse,
       // add to feed
       entries[name].publishTime = publishTime
       entries[name].author = site
+      entries[name].authorProfile = siteProfile
+      entries[name].url = site.url + entries[name].name
       feed.push(entries[name])
     })
   }))

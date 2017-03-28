@@ -217,6 +217,7 @@ await profile.listBroadcasts({
 }) => /* [
   {
     author: DatProfileSite, the broadcast author
+    authorProfile: Object, the profile of the author (same content as getProfile())
     name: String, the file path
     ctime: Number, creation time
     mtime: Number, modification time
@@ -247,6 +248,7 @@ await profile.listFeed({
 }) => /* [
   {
     author: DatProfileSite, the broadcast author
+    authorProfile: Object, the profile of the author (same content as getProfile())
     name: String, the file path
     ctime: Number, creation time
     mtime: Number, modification time
