@@ -80,7 +80,8 @@ module.exports = class DatProfileSite {
     var followedSites = await this.cache.otherSites.get(follows)
 
     // fetch profiles
-    return await getRemoteProfiles(followedSites, opts)
+    await getRemoteProfiles(followedSites, opts)
+    return followedSites
   }
 
   async listKnownFollowers (opts) {
@@ -89,11 +90,11 @@ module.exports = class DatProfileSite {
 
   async listFriends (opts) {
     // list following
-    var followingProfiles = await this.listFollowing(opts)
+    var followingSites = await this.listFollowing(opts)
 
     // filter mutual follows
-    return followingProfiles.filter(profile => {
-      var follows = profile.follows
+    return followingSites.filter(site => {
+      var follows = site.profile.follows
       if (!follows || !Array.isArray(follows)) {
         return false
       }
@@ -203,20 +204,17 @@ async function getRemoteProfiles (profileSites, {timeout} = {}) {
     try {
       // fetch profile and note that download was successful
       var profile = await profileSite.cache.profile.get({timeout, noCache: true})
-      profile.url = profileSite.url
       profile.downloaded = true
-      return profile
+      profileSite.profile = profile
     } catch (e) {
       if (e.name === 'TimeoutError') {
         // download failure
-        return {
-          url: profileSite.url,
+        profileSite.profile = {
           downloaded: false
         }
       }
       // other failure
-      return {
-        url: profileSite.url,
+      profileSite.profile = {
         downloaded: true
       }
     }

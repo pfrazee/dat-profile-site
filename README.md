@@ -121,13 +121,15 @@ List of users followed by this profile.
 await profile.listFollowing({
   timeout: Number, amount of ms to wait until giving up on a profile-download (default 5000)
 }) /* => [
-  {
-    url: String, the profile url
-    name: String?, the user name (not globally unique)
-    description: String?, a short bio
-    image: String?, path of the profile image
-    downloaded: Boolean, has the profile been downloaded?
-  },
+  DatProfileSite {
+    url: String
+    profile: {
+      name: String?, the user name (not globally unique)
+      description: String?, a short bio
+      image: String?, path of the profile image
+      downloaded: Boolean, has the profile been downloaded?
+    }
+  }
   ...
 ] */
 ```
@@ -140,12 +142,14 @@ Note: It's not possible to list *all* users following this profile, because the 
 
 ```js
 await profile.listKnownFollowers() /* => [
-  {
-    url: String,
-    name: String?,
-    description: String?,
-    image: String?
-  },
+  DatProfileSite {
+    url: String
+    profile: {
+      name: String?
+      description: String?
+      image: String?
+    }
+  }
   ...
 ] */
 ```
@@ -156,12 +160,14 @@ List of users following this profile, which are also followed by this profile.
 
 ```js
 await profile.listFriends() /* => [
-  {
-    url: String,
-    name: String?,
-    description: String?,
-    image: String?
-  },
+  DatProfileSite {
+    url: String
+    profile: {
+      name: String?
+      description: String?
+      image: String?
+    }
+  }
   ...
 ] */
 ```
